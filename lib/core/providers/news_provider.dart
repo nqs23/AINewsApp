@@ -4,14 +4,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_app/core/models/news_item.dart';
 import 'package:my_app/core/models/news_region.dart';
 import 'package:my_app/core/models/news_category.dart';
-import 'package:my_app/core/services/openai_service.dart';
+import 'package:my_app/core/services/news_service.dart';
 
 class NewsProvider extends ChangeNotifier {
   static const String _newsArchiveKey = 'news_archive';
   static const String _newsRegionKey = 'news_region';
   static const String _newsCategoryKey = 'news_category';
 
-  final OpenAIService _openAIService = OpenAIService();
+  final NewsService _newsService = NewsService();
   final Map<DateTime, Map<NewsRegion, List<NewsItem>>> _newsArchive = {};
   bool _isLoading = false;
   String? _error;
@@ -25,7 +25,7 @@ class NewsProvider extends ChangeNotifier {
   NewsCategory get currentCategory => _currentCategory;
 
   Future<void> init() async {
-    await _openAIService.init();
+    await _newsService.init();
     await _loadFromStorage();
   }
 
@@ -137,7 +137,7 @@ class NewsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final news = await _openAIService.fetchNews(_currentRegion, _currentCategory);
+      final news = await _newsService.fetchNews(_currentRegion, _currentCategory);
 
       // Group news by date and region
       final today = _getDateOnly(DateTime.now());

@@ -6,7 +6,7 @@ import 'package:my_app/core/models/news_item.dart';
 import 'package:my_app/core/models/news_region.dart';
 import 'package:my_app/core/models/news_category.dart';
 
-class OpenAIService {
+class NewsService {
   static const String _apiUrl = 'https://newsapi.org/v2/top-headlines';
   String? _apiKey;
 
