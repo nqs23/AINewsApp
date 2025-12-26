@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:my_app/core/l10n/app_localizations.dart';
-import 'package:my_app/core/providers/news_provider.dart';
+import 'package:my_app/core/cubit/news_cubit.dart';
 import 'package:my_app/core/models/news_item.dart';
 import 'package:my_app/core/models/news_region.dart';
 
@@ -34,215 +34,218 @@ class ArchiveScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final newsProvider = Provider.of<NewsProvider>(context);
     final isDark = theme.brightness == Brightness.dark;
+    return BlocBuilder<NewsCubit, NewsState>(
+      builder: (context, state) {
+        final cubit = context.read<NewsCubit>();
+        final sortedDates = cubit
+            .getSortedDates()
+            .where((date) => cubit.hasNewsForRegion(date, state.currentRegion))
+            .toList();
 
-    // Filter dates to only show those with news for current region
-    final sortedDates = newsProvider.getSortedDates()
-        .where((date) => newsProvider.hasNewsForRegion(date, newsProvider.currentRegion))
-        .toList();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          l10n.newsArchive,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [
-                    const Color(0xFF131320),
-                    const Color(0xFF1E1E2E).withAlpha(128),
-                  ]
-                : [
-                    Colors.white,
-                    const Color(0xFFF5F7FF),
-                  ],
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              l10n.newsArchive,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            centerTitle: true,
           ),
-        ),
-        child: Column(
-          children: [
-            // Region Toggle
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withAlpha(77),
-                    width: 2,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: NewsRegion.values.map((region) {
-                    final isSelected = newsProvider.currentRegion == region;
-                    return GestureDetector(
-                      onTap: () => newsProvider.setRegion(region),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: isSelected
-                              ? LinearGradient(
-                                  colors: [
-                                    theme.colorScheme.primary,
-                                    theme.colorScheme.secondary,
-                                  ],
-                                )
-                              : null,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          region.toDisplayString(l10n.locale.languageCode),
-                          style: TextStyle(
-                            color: isSelected
-                                ? Colors.white
-                                : theme.colorScheme.onSurface,
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: isDark
+                    ? [
+                        const Color(0xFF131320),
+                        const Color(0xFF1E1E2E).withAlpha(128),
+                      ]
+                    : [
+                        Colors.white,
+                        const Color(0xFFF5F7FF),
+                      ],
               ),
             ),
-            // Main content
-            Expanded(
-              child: sortedDates.isEmpty
-                  ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(32),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [
-                                theme.colorScheme.primary.withAlpha(51),
-                                theme.colorScheme.secondary.withAlpha(51),
-                              ],
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.archive_outlined,
-                            size: 80,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          l10n.noNewsYet,
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 48),
-                          child: Text(
-                            l10n.locale.languageCode == 'ru'
-                                ? 'Нажмите кнопку на главном экране\nчтобы загрузить новости'
-                                : 'Press the button on the main screen\nto load news',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.onSurface.withAlpha(153),
-                            ),
-                          ),
-                        ),
-                      ],
+            child: Column(
+              children: [
+                // Region Toggle
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withAlpha(77),
+                        width: 2,
+                      ),
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: sortedDates.length,
-                    itemBuilder: (context, index) {
-                      final date = sortedDates[index];
-                      final newsItems = newsProvider.getNewsForDate(date);
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: NewsRegion.values.map((region) {
+                        final isSelected = state.currentRegion == region;
+                        return GestureDetector(
+                          onTap: () => context.read<NewsCubit>().setRegion(region),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: isSelected
+                                  ? LinearGradient(
                                       colors: [
                                         theme.colorScheme.primary,
                                         theme.colorScheme.secondary,
                                       ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    _formatDate(date, l10n),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.surface,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: theme.colorScheme.primary.withAlpha(51),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    '${newsItems.length} ${l10n.locale.languageCode == 'ru' ? 'новостей' : 'news'}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                    )
+                                  : null,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              region.toDisplayString(l10n.locale.languageCode),
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.white
+                                    : theme.colorScheme.onSurface,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
                             ),
                           ),
-                          ...newsItems.map((newsItem) => _NewsCard(
-                                newsItem: newsItem,
-                                theme: theme,
-                              )),
-                          const SizedBox(height: 8),
-                        ],
-                      );
-                    },
+                        );
+                      }).toList(),
+                    ),
                   ),
+                ),
+                // Main content
+                Expanded(
+                  child: sortedDates.isEmpty
+                      ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(32),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [
+                                    theme.colorScheme.primary.withAlpha(51),
+                                    theme.colorScheme.secondary.withAlpha(51),
+                                  ],
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.archive_outlined,
+                                size: 80,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              l10n.noNewsYet,
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 48),
+                              child: Text(
+                                l10n.locale.languageCode == 'ru'
+                                    ? 'Нажмите кнопку на главном экране\nчтобы загрузить новости'
+                                    : 'Press the button on the main screen\nto load news',
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: theme.colorScheme.onSurface.withAlpha(153),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: sortedDates.length,
+                        itemBuilder: (context, index) {
+                          final date = sortedDates[index];
+                          final newsItems = cubit.getNewsForDate(date);
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            theme.colorScheme.primary,
+                                            theme.colorScheme.secondary,
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        _formatDate(date, l10n),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.surface,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: theme.colorScheme.primary.withAlpha(51),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '${newsItems.length} ${l10n.locale.languageCode == 'ru' ? 'новостей' : 'news'}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: theme.colorScheme.primary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              ...newsItems.map((newsItem) => _NewsCard(
+                                    newsItem: newsItem,
+                                    theme: theme,
+                                  )),
+                              const SizedBox(height: 8),
+                            ],
+                          );
+                        },
+                      ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

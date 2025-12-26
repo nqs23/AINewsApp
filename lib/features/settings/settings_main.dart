@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:my_app/core/l10n/app_localizations.dart';
+import 'package:my_app/core/cubit/news_cubit.dart';
 import 'package:my_app/core/providers/settings_provider.dart';
-import 'package:my_app/core/providers/news_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -53,8 +54,8 @@ class SettingsScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
-              final newsProvider = Provider.of<NewsProvider>(context, listen: false);
-              await newsProvider.clearAllNews();
+              final newsCubit = context.read<NewsCubit>();
+              await newsCubit.clearAllNews();
 
               if (context.mounted) {
                 showDialog(
@@ -198,7 +199,7 @@ class SettingsScreen extends StatelessWidget {
                         onChanged: (value) {
                           settingsProvider.toggleLanguage();
                         },
-                        activeColor: theme.colorScheme.primary,
+                        activeThumbColor: theme.colorScheme.primary,
                       ),
                     ],
                   ),
@@ -289,7 +290,7 @@ class SettingsScreen extends StatelessWidget {
                         onChanged: (value) {
                           settingsProvider.toggleTheme();
                         },
-                        activeColor: theme.colorScheme.primary,
+                        activeThumbColor: theme.colorScheme.primary,
                       ),
                     ],
                   ),
